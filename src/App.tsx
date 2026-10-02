@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ThemeProvider } from './context/ThemeContext';
 import { Header } from './components/Header';
 import { StoryVault } from './components/StoryVault';
 import { StoryPipelineView } from './components/StoryPipelineView';
 import { DMIntakeModal } from './components/DMIntakeModal';
 import { PublicBioModal } from './components/PublicBioModal';
+import { CommandPalette } from './components/CommandPalette';
 import { INITIAL_STORIES } from './data/mockStories';
 import type { FollowerStory } from './types';
 
@@ -13,6 +14,22 @@ export function AppContent() {
   const [selectedStoryId, setSelectedStoryId] = useState<string | null>('story-101');
   const [isDMIntakeOpen, setIsDMIntakeOpen] = useState(false);
   const [isBioFormOpen, setIsBioFormOpen] = useState(false);
+  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setIsCommandPaletteOpen((prev) => !prev);
+      }
+      if (e.key.toLowerCase() === 'n' && !isDMIntakeOpen && !isBioFormOpen && !isCommandPaletteOpen && !['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement)?.tagName)) {
+        e.preventDefault();
+        setIsDMIntakeOpen(true);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isDMIntakeOpen, isBioFormOpen, isCommandPaletteOpen]);
 
   const selectedStory = stories.find((s) => s.id === selectedStoryId) || null;
 
@@ -77,6 +94,16 @@ export function AppContent() {
         )}
       </main>
 
+      {/* Command Palette */}
+      <CommandPalette
+        isOpen={isCommandPaletteOpen}
+        onClose={() => setIsCommandPaletteOpen(false)}
+        stories={stories}
+        onSelectStory={(id) => setSelectedStoryId(id)}
+        onOpenDMIntake={() => setIsDMIntakeOpen(true)}
+        onOpenBioForm={() => setIsBioFormOpen(true)}
+      />
+
       {/* Modals */}
       <DMIntakeModal
         isOpen={isDMIntakeOpen}
@@ -96,8 +123,10 @@ export function AppContent() {
           <span>
             © 2026 <strong className="text-slate-300">BeWithYugace Studio</strong> • Powered by Zero-Hallucination AI Pipeline
           </span>
-          <span className="text-[11px] text-slate-500">
-            Instagram DM Intake • 30-40s Scriptwriter • 12-Factor Reach Model
+          <span className="text-[11px] text-slate-500 flex items-center gap-2">
+            <span>Press <kbd className="px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 font-mono text-[10px] border border-white/10">Cmd+K</kbd> for Command Palette</span>
+            <span>•</span>
+            <span><kbd className="px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 font-mono text-[10px] border border-white/10">N</kbd> for New DM</span>
           </span>
         </div>
       </footer>
