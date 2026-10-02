@@ -487,16 +487,27 @@ export const StoryPipelineView: React.FC<StoryPipelineViewProps> = ({
           </div>
         )}
 
-        {/* TAB 2: 3-STORY ANGLES */}
+        {/* TAB 2: 3-STORY ANGLES (PHASE 4) */}
         {activeTab === 'angles' && (
           <div className="space-y-4">
-            <div className="p-4 rounded-2xl bg-slate-900/80 border border-white/10 flex items-center justify-between">
+            <div className="p-4 rounded-2xl bg-slate-900/80 border border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
-                <h3 className="text-sm font-bold text-white">3 Distinct Story Angles</h3>
+                <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                  <Sliders className="w-4 h-4 text-amber-400" />
+                  <span>3 Distinct Story Angles & Scoring Matrix</span>
+                </h3>
                 <p className="text-xs text-slate-400">
-                  Select the narrative perspective that best aligns with BeWithYugace storytelling and viral retention.
+                  Select or override the narrative perspective calibrated for BeWithYugace retention and viral hook potency.
                 </p>
               </div>
+
+              <button
+                onClick={handleRunFullPipeline}
+                className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold border border-white/10 flex items-center gap-1.5"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                <span>Regenerate Angles</span>
+              </button>
             </div>
 
             {story.angles ? (
@@ -585,7 +596,7 @@ export const StoryPipelineView: React.FC<StoryPipelineViewProps> = ({
           </div>
         )}
 
-        {/* TAB 3: BENCHMARKS & CONTENT GAP */}
+        {/* TAB 3: BENCHMARKS & CONTENT GAP (PHASE 5) */}
         {activeTab === 'research' && (
           <div className="space-y-4">
             
@@ -617,10 +628,39 @@ export const StoryPipelineView: React.FC<StoryPipelineViewProps> = ({
               </div>
             )}
 
+            {/* ToS-Safe Search Query Suggestions */}
+            <div className="p-4 rounded-2xl bg-slate-900/80 border border-white/10 space-y-2.5">
+              <span className="text-xs font-bold text-white flex items-center gap-1.5">
+                <Layers className="w-3.5 h-3.5 text-cyan-400" />
+                <span>ToS-Safe Public Research Queries (YouTube Data API & Google):</span>
+              </span>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                {[
+                  `"${story.category.split('&')[0].trim()} true story short"`,
+                  `"unbelievable discovery reel 30s"`,
+                  `"unexpected turning point short viral"`,
+                  `"${story.category.toLowerCase()} reel breakdown"`,
+                ].map((q, idx) => (
+                  <div key={idx} className="flex items-center justify-between p-2.5 rounded-xl bg-slate-950 border border-white/5 text-slate-300 font-mono text-[11px]">
+                    <span className="truncate">{q}</span>
+                    <button
+                      onClick={() => handleCopyText(q, `query-${idx}`)}
+                      className="text-amber-400 hover:text-amber-300 ml-2"
+                    >
+                      {copiedKey === `query-${idx}` ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+
             {/* Comparables Table */}
             {story.comparables && (
               <div className="p-5 rounded-2xl bg-slate-900/80 border border-white/10 space-y-3">
-                <h4 className="text-xs font-bold text-white uppercase tracking-wider">Comparable Short-Form Benchmark Data</h4>
+                <div className="flex items-center justify-between">
+                  <h4 className="text-xs font-bold text-white uppercase tracking-wider">Comparable Short-Form Benchmark Data</h4>
+                  <span className="text-[11px] text-slate-400 font-mono">{story.comparables.length} tracked references</span>
+                </div>
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-xs">
                     <thead>
