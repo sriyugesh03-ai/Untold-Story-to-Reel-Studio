@@ -40,6 +40,8 @@ import {
   generateLearningTakeaways
 } from '../services/aiPipeline';
 
+import { FollowerPreviewModal } from './FollowerPreviewModal';
+
 interface StoryPipelineViewProps {
   story: FollowerStory;
   onUpdateStory: (updated: FollowerStory) => void;
@@ -64,6 +66,7 @@ export const StoryPipelineView: React.FC<StoryPipelineViewProps> = ({
   const [activeTab, setActiveTab] = useState<TabKey>('truth_check');
   const [isProcessing, setIsProcessing] = useState(false);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
+  const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
 
   // Editable Script & Shot State
   const [editableScript, setEditableScript] = useState(story.scriptPackage?.fullScript || '');
@@ -312,6 +315,15 @@ export const StoryPipelineView: React.FC<StoryPipelineViewProps> = ({
           >
             <CheckCircle2 className="w-3.5 h-3.5" />
             <span>Approve Reel</span>
+          </button>
+
+          <button
+            onClick={() => setIsPreviewModalOpen(true)}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-white/10 text-cyan-300 text-xs font-semibold transition-all"
+            title="Generate Follower Script Preview Link"
+          >
+            <ShieldCheck className="w-3.5 h-3.5 text-cyan-400" />
+            <span>Follower Preview</span>
           </button>
 
           <button
@@ -1205,6 +1217,12 @@ export const StoryPipelineView: React.FC<StoryPipelineViewProps> = ({
         )}
 
       </div>
+
+      <FollowerPreviewModal
+        isOpen={isPreviewModalOpen}
+        onClose={() => setIsPreviewModalOpen(false)}
+        story={story}
+      />
 
     </div>
   );
