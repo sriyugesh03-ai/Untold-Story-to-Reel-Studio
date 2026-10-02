@@ -20,12 +20,14 @@ import {
   Pause, 
   RotateCcw, 
   Save,
-  Eye
+  Eye,
+  MessageSquare
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import jsPDF from 'jspdf';
 import type { 
   FollowerStory, 
+  StoryStatus,
   ScriptPackage,
   PerformanceSnapshot
 } from '../types';
@@ -72,6 +74,9 @@ export const StoryPipelineView: React.FC<StoryPipelineViewProps> = ({
   const [promptSpeed, setPromptSpeed] = useState(2); // 1 to 5
   const [fontSize, setFontSize] = useState(32); // px
   const [isMirrored, setIsMirrored] = useState(false);
+
+  // Follow-up question state
+  const [activeFollowupQuestion, setActiveFollowupQuestion] = useState<string | null>(null);
 
   // Performance Snapshot form state
   const [snapTime, setSnapTime] = useState<'1 Hour' | '6 Hours' | '24 Hours' | '48 Hours'>('1 Hour');
@@ -120,6 +125,14 @@ export const StoryPipelineView: React.FC<StoryPipelineViewProps> = ({
     }
   };
 
+  const handleStatusChange = (newStatus: StoryStatus) => {
+    const updated: FollowerStory = {
+      ...story,
+      status: newStatus,
+    };
+    onUpdateStory(updated);
+  };
+
   const handleApproveReel = () => {
     const updated: FollowerStory = {
       ...story,
@@ -153,6 +166,13 @@ export const StoryPipelineView: React.FC<StoryPipelineViewProps> = ({
     navigator.clipboard.writeText(text);
     setCopiedKey(key);
     setTimeout(() => setCopiedKey(null), 2000);
+  };
+
+  const handleGenerateDMClarification = (question: string) => {
+    const handleName = story.followerAlias || story.followerHandle;
+    const message = `Hey ${handleName}! Loved your story for BeWithYugace. Quick clarification before we film the Reel: ${question} (Reply whenever you get time!)`;
+    handleCopyText(message, 'dm_clarification');
+    setActiveFollowupQuestion(question);
   };
 
   const handleExportCapCutCSV = () => {
@@ -254,10 +274,24 @@ export const StoryPipelineView: React.FC<StoryPipelineViewProps> = ({
                 {story.followerAlias || story.followerHandle}’s Story
               </h2>
             </div>
-            <p className="text-xs text-slate-400 mt-0.5">
-              ID: <span className="font-mono text-slate-300">{story.id}</span> • Status:{' '}
-              <span className="font-semibold text-emerald-400 uppercase">{story.status}</span>
-            </p>
+            
+            {/* Status Lifecycle Selector */}
+            <div className="flex items-center gap-2 mt-1">
+              <span className="text-[11px] text-slate-500">Lifecycle State:</span>
+              <select
+                value={story.status}
+                onChange={(e) => handleStatusChange(e.target.value as StoryStatus)}
+                className="bg-slate-950 border border-white/10 text-emerald-400 font-bold text-xs rounded-lg px-2 py-0.5 focus:outline-none focus:border-amber-500 uppercase tracking-wider"
+              >
+                <option value="new_dm">NEW DM</option>
+                <option value="needs_clarification">NEEDS CLARIFICATION</option>
+                <option value="analyzed">ANALYZED</option>
+                <option value="in_production">IN PRODUCTION</option>
+                <option value="approved">APPROVED</option>
+                <option value="published">PUBLISHED</option>
+                <option value="archived">ARCHIVED</option>
+              </select>
+            </div>
           </div>
         </div>
 
@@ -326,11 +360,11 @@ export const StoryPipelineView: React.FC<StoryPipelineViewProps> = ({
       {/* Tab Content Panes */}
       <div className="flex-1 overflow-y-auto pr-1">
         
-        {/* TAB 1: TRUTH CHECK & SOURCE QUOTES */}
+        {/* TAB 1: TRUTH CHECK & SOURCE QUOTES (PHASE 3) */}
         {activeTab === 'truth_check' && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             
-            {/* Left: Raw DM & Consent */}
+            {/* Left: Raw DM & Follow-up Q&A Generator */}
             <div className="p-5 rounded-2xl bg-slate-900/80 border border-white/10 space-y-4">
               <div className="flex items-center justify-between border-b border-white/5 pb-3">
                 <span className="text-xs font-bold text-white flex items-center gap-2">
@@ -345,6 +379,30 @@ export const StoryPipelineView: React.FC<StoryPipelineViewProps> = ({
               <div className="p-4 rounded-xl bg-slate-950/80 border border-white/5 text-xs text-slate-200 leading-relaxed font-mono whitespace-pre-wrap">
                 {story.rawStory}
               </div>
+
+              {/* Follow-up Clarification Tool */}
+              {story.analysis?.clarificationQuestions && story.analysis.clarificationQuestions.length > 0 && (
+                <div className="p-4 rounded-xl bg-slate-950/60 border border-amber-500/20 space-y-2.5">
+                  <span className="text-xs font-bold text-amber-300 flex items-center gap-1.5">
+                    <MessageSquare className="w-3.5 h-3.5" />
+                    <span>Generate Instagram DM Follow-Up Question:</span>
+                  </span>
+                  <div className="space-y-2">
+                    {story.analysis.clarificationQuestions.map((q, idx) => (
+                      <div key={idx} className="flex items-center justify-between p-2.5 rounded-lg bg-slate-900 border border-white/5 text-xs text-slate-300">
+                        <span className="truncate pr-2">{q}</span>
+                        <button
+                          onClick={() => handleGenerateDMClarification(q)}
+                          className="px-2.5 py-1 rounded-md bg-amber-500/20 hover:bg-amber-500 text-amber-300 hover:text-slate-950 font-semibold text-[11px] shrink-0 transition-all flex items-center gap-1"
+                        >
+                          {copiedKey === 'dm_clarification' && activeFollowupQuestion === q ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                          <span>{copiedKey === 'dm_clarification' && activeFollowupQuestion === q ? 'Copied DM' : 'Copy IG DM'}</span>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Guardrails / Consent Card */}
               <div className="p-3.5 rounded-xl bg-slate-950/60 border border-white/5 space-y-2 text-xs">

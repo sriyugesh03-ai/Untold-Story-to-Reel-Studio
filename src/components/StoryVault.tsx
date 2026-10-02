@@ -8,10 +8,13 @@ import {
   Clock, 
   CheckCircle2, 
   Flame,
-  ArrowUpRight
+  ArrowUpRight,
+  Download,
+  Filter,
+  AlertTriangle
 } from 'lucide-react';
 import { InstagramIcon } from './icons/InstagramIcon';
-import type { FollowerStory, StoryStatus } from '../types';
+import type { FollowerStory, StoryStatus, EmotionCategory } from '../types';
 
 interface StoryVaultProps {
   stories: FollowerStory[];
@@ -19,7 +22,18 @@ interface StoryVaultProps {
   onSelectStory: (storyId: string) => void;
   onDeleteStory: (storyId: string) => void;
   onOpenDMIntake: () => void;
+  onUpdateStoryStatus?: (storyId: string, newStatus: StoryStatus) => void;
 }
+
+const CATEGORIES: EmotionCategory[] = [
+  'Heartbreak & Betrayal',
+  'Career & Hustle',
+  'Family & Secrets',
+  'Horror & Paranormal',
+  'Unbelievable Coincidence',
+  'Redemption & Victory',
+  'Wild & Humorous',
+];
 
 export const StoryVault: React.FC<StoryVaultProps> = ({
   stories,
@@ -30,6 +44,8 @@ export const StoryVault: React.FC<StoryVaultProps> = ({
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [categoryFilter, setCategoryFilter] = useState<string>('all');
+  const [withdrawingStoryId, setWithdrawingStoryId] = useState<string | null>(null);
 
   const filteredStories = stories.filter((story) => {
     const matchesSearch = 
@@ -39,9 +55,36 @@ export const StoryVault: React.FC<StoryVaultProps> = ({
       story.category.toLowerCase().includes(searchQuery.toLowerCase());
 
     const matchesStatus = statusFilter === 'all' ? true : story.status === statusFilter;
+    const matchesCategory = categoryFilter === 'all' ? true : story.category === categoryFilter;
 
-    return matchesSearch && matchesStatus;
+    return matchesSearch && matchesStatus && matchesCategory;
   });
+
+  const handleExportVaultJSON = () => {
+    const dataStr = JSON.stringify(stories, null, 2);
+    const blob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `BeWithYugace_Stories_Vault_${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+  };
+
+  const handleExportVaultCSV = () => {
+    const headers = 'ID,Created At,Follower Handle,Alias,Category,Status,Source,Raw Story\n';
+    const rows = stories
+      .map(
+        s =>
+          `"${s.id}","${s.createdAt}","${s.followerHandle}","${s.followerAlias || ''}","${s.category}","${s.status}","${s.source}","${s.rawStory.replace(/"/g, '""').slice(0, 200)}..."`
+      )
+      .join('\n');
+    const blob = new Blob([headers + rows], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `BeWithYugace_Stories_Vault_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+  };
 
   const getStatusBadge = (status: StoryStatus) => {
     switch (status) {
@@ -92,41 +135,85 @@ export const StoryVault: React.FC<StoryVaultProps> = ({
           </p>
         </div>
 
-        {/* Search bar */}
-        <div className="relative w-full sm:w-64">
-          <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search handle or story..."
-            className="w-full rounded-xl bg-slate-950/80 border border-white/10 pl-8 pr-3 py-1.5 text-xs text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-amber-500 transition-all"
-          />
+        {/* Search and Export Bar */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <div className="relative w-full sm:w-56">
+            <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search handle or story..."
+              className="w-full rounded-xl bg-slate-950/80 border border-white/10 pl-8 pr-3 py-1.5 text-xs text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-amber-500 transition-all"
+            />
+          </div>
+
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={handleExportVaultCSV}
+              className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-[11px] font-semibold text-slate-300 border border-white/5 transition-all"
+              title="Export Vault to CSV"
+            >
+              <Download className="w-3 h-3 text-cyan-400" />
+              <span>CSV</span>
+            </button>
+            <button
+              onClick={handleExportVaultJSON}
+              className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-[11px] font-semibold text-slate-300 border border-white/5 transition-all"
+              title="Export Vault to JSON"
+            >
+              <Download className="w-3 h-3 text-amber-400" />
+              <span>JSON</span>
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* Filter Tabs */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none text-xs">
-        {[
-          { id: 'all', label: 'All Stories' },
-          { id: 'new_dm', label: 'New DMs' },
-          { id: 'analyzed', label: 'Analyzed' },
-          { id: 'in_production', label: 'In Scripting' },
-          { id: 'approved', label: 'Approved Reels' },
-          { id: 'published', label: 'Published & Learnings' },
-        ].map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setStatusFilter(tab.id)}
-            className={`px-3 py-1.5 rounded-xl font-medium whitespace-nowrap transition-all ${
-              statusFilter === tab.id
-                ? 'bg-amber-500 text-slate-950 font-bold shadow-md shadow-amber-500/20 scale-[1.02]'
-                : 'bg-slate-900/80 text-slate-400 hover:text-white hover:bg-slate-800 border border-white/5'
-            }`}
+      {/* Filter Tabs & Category Selector */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5">
+        
+        {/* Status Filter Tabs */}
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none text-xs w-full sm:w-auto">
+          {[
+            { id: 'all', label: 'All Stories' },
+            { id: 'new_dm', label: 'New DMs' },
+            { id: 'needs_clarification', label: 'Needs Q&A' },
+            { id: 'analyzed', label: 'Analyzed' },
+            { id: 'in_production', label: 'In Scripting' },
+            { id: 'approved', label: 'Approved' },
+            { id: 'published', label: 'Published' },
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setStatusFilter(tab.id)}
+              className={`px-3 py-1.5 rounded-xl font-medium whitespace-nowrap transition-all ${
+                statusFilter === tab.id
+                  ? 'bg-amber-500 text-slate-950 font-bold shadow-md shadow-amber-500/20 scale-[1.02]'
+                  : 'bg-slate-900/80 text-slate-400 hover:text-white hover:bg-slate-800 border border-white/5'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Category Dropdown */}
+        <div className="flex items-center gap-1.5 text-xs">
+          <Filter className="w-3.5 h-3.5 text-slate-400" />
+          <select
+            value={categoryFilter}
+            onChange={(e) => setCategoryFilter(e.target.value)}
+            className="rounded-xl bg-slate-900 border border-white/10 px-2.5 py-1 text-xs text-slate-300 focus:outline-none focus:border-amber-500"
           >
-            {tab.label}
-          </button>
-        ))}
+            <option value="all">All Categories</option>
+            {CATEGORIES.map((cat) => (
+              <option key={cat} value={cat}>
+                {cat}
+              </option>
+            ))}
+          </select>
+        </div>
+
       </div>
 
       {/* Stories List / Grid */}
@@ -207,7 +294,7 @@ export const StoryVault: React.FC<StoryVaultProps> = ({
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        onDeleteStory(story.id);
+                        setWithdrawingStoryId(story.id);
                       }}
                       className="p-1.5 rounded-lg text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
                       title="Withdraw / Remove Story"
@@ -228,6 +315,40 @@ export const StoryVault: React.FC<StoryVaultProps> = ({
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* Withdrawal Confirmation Dialog */}
+      {withdrawingStoryId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-150">
+          <div className="w-full max-w-sm p-5 rounded-2xl bg-slate-900 border border-rose-500/30 shadow-2xl space-y-4">
+            <div className="flex items-center gap-3 text-rose-400">
+              <div className="p-2 rounded-xl bg-rose-500/20">
+                <AlertTriangle className="w-5 h-5" />
+              </div>
+              <h3 className="text-sm font-bold text-white">Withdraw Follower Story?</h3>
+            </div>
+            <p className="text-xs text-slate-300 leading-relaxed">
+              This action immediately deletes the story, derived AI truth checks, scripts, and exports from the database in compliance with follower privacy rights.
+            </p>
+            <div className="flex items-center justify-end gap-2 pt-2">
+              <button
+                onClick={() => setWithdrawingStoryId(null)}
+                className="px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  onDeleteStory(withdrawingStoryId);
+                  setWithdrawingStoryId(null);
+                }}
+                className="px-4 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs shadow-md shadow-rose-600/30"
+              >
+                Confirm Delete
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
