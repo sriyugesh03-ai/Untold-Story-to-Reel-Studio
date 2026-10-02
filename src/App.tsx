@@ -6,6 +6,7 @@ import { StoryPipelineView } from './components/StoryPipelineView';
 import { DMIntakeModal } from './components/DMIntakeModal';
 import { PublicBioModal } from './components/PublicBioModal';
 import { CommandPalette } from './components/CommandPalette';
+import { SettingsModal } from './components/SettingsModal';
 import { INITIAL_STORIES } from './data/mockStories';
 import type { FollowerStory } from './types';
 
@@ -15,6 +16,7 @@ export function AppContent() {
   const [isDMIntakeOpen, setIsDMIntakeOpen] = useState(false);
   const [isBioFormOpen, setIsBioFormOpen] = useState(false);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -70,6 +72,7 @@ export function AppContent() {
       <Header
         onOpenDMIntake={() => setIsDMIntakeOpen(true)}
         onOpenBioForm={() => setIsBioFormOpen(true)}
+        onOpenSettings={() => setIsSettingsOpen(true)}
         totalStories={stories.length}
         approvedCount={approvedCount}
         avgReachScore={avgReachScore}
@@ -102,6 +105,12 @@ export function AppContent() {
         onSelectStory={(id) => setSelectedStoryId(id)}
         onOpenDMIntake={() => setIsDMIntakeOpen(true)}
         onOpenBioForm={() => setIsBioFormOpen(true)}
+      />
+
+      {/* Settings & API Key Configuration Modal */}
+      <SettingsModal
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
       />
 
       {/* Modals */}
