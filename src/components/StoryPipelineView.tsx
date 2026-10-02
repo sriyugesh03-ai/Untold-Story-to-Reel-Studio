@@ -749,9 +749,20 @@ export const StoryPipelineView: React.FC<StoryPipelineViewProps> = ({
                   <h3 className="text-sm font-bold text-white">
                     30–40s Teleprompter-Ready Script
                   </h3>
-                  <span className="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-amber-500/10 text-amber-300 border border-amber-500/20">
-                    {editableScript.split(/\s+/).filter(Boolean).length} Words • ~{Math.round(editableScript.split(/\s+/).filter(Boolean).length / 2.8)}s Duration
-                  </span>
+                  {(() => {
+                    const words = editableScript.split(/\s+/).filter(Boolean).length;
+                    const isOptimal = words >= 90 && words <= 110;
+                    return (
+                      <span className={`px-2.5 py-0.5 rounded-full text-xs font-mono font-bold border flex items-center gap-1.5 ${
+                        isOptimal
+                          ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
+                          : 'bg-amber-500/10 text-amber-300 border-amber-500/30'
+                      }`}>
+                        <span className={`w-2 h-2 rounded-full ${isOptimal ? 'bg-emerald-400 animate-ping' : 'bg-amber-400'}`} />
+                        <span>{words} Words ({isOptimal ? 'Optimal 30-40s Pacing' : 'Target: 90-110 Words'}) • ~{Math.round(words / 2.8)}s</span>
+                      </span>
+                    );
+                  })()}
                 </div>
 
                 <div className="flex items-center gap-2">
